@@ -11,7 +11,7 @@ resource "aws_autoscaling_group" "app_asg" {
     version = "$Latest"
   }
 
-  vpc_zone_identifier = var.public_subnets
+  vpc_zone_identifier = [aws_subnet.public_1.id, aws_subnet.public_2.id]
 
   target_group_arns = [aws_lb_target_group.app_tg.arn]
 

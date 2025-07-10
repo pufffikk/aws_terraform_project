@@ -2,7 +2,7 @@ resource "aws_lb" "app_alb" {
   name               = "quiz-game-alb"
   internal           = false
   load_balancer_type = "application"
-  subnets            = var.public_subnets
+  subnets            = [aws_subnet.public_1.id, aws_subnet.public_2.id]
   security_groups    = [aws_security_group.alb_sg.id]
 }
 
@@ -10,7 +10,7 @@ resource "aws_lb_target_group" "app_tg" {
   name     = "quiz-game-tg"
   port     = 8000
   protocol = "HTTP"
-  vpc_id   = var.vpc_id
+  vpc_id   = aws_vpc.main.id
 
   health_check {
     path                = "/health"
