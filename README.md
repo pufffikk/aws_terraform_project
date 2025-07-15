@@ -121,18 +121,76 @@ terraform destroy
 
 ---
 
-## 📚 .gitignore recommendation
+## 🏗️ Infrastructure Overview
 
-Add the following to your `.gitignore`:
+This project provisions the following AWS resources using Terraform:
 
-```
-.terraform/
-*.tfstate
-*.tfstate.backup
-*.pem
-```
+### 1. **Networking (VPC)**
+
+- **VPC** with CIDR `10.0.0.0/16`
+- **Public Subnets**: 2 subnets in different Availability Zones (AZs)
+  - `10.0.1.0/24` in `us-west-2a`
+  - `10.0.2.0/24` in `us-west-2b`
+- **Private Subnets**: 2 subnets in different AZs
+  - `10.0.11.0/24` and `10.0.12.0/24`
+- **Internet Gateway (IGW)** for public subnet outbound traffic
+- **NAT Gateway** in a public subnet to allow private subnets outbound internet access
+- **Route Tables** to route public and private traffic accordingly
+
+### 2. **Security Groups**
+
+- **ALB Security Group** allowing inbound HTTP (port 80)
+- **EC2 Security Group** allowing traffic from ALB and outbound internet access
+- **RDS Security Group** allowing access only from EC2 instances
+
+### 3. **Compute**
+
+- **Launch Template** defining EC2 instance settings (AMI, instance type `t3.micro`, volume, user\_data)
+- **Auto Scaling Group (ASG)** that always maintains 2 EC2 instances (1 in each AZ)
+- **User Data Script** installs FastAPI, pulls your GitHub repo, sets up environment, and runs Uvicorn
+
+### 4. **Load Balancing**
+
+- **Application Load Balancer (ALB)**:
+  - Distributes traffic across the EC2 instances
+  - Listens on port 80
+  - Performs health checks on `/health`
+- **Target Group** associated with the ALB for EC2 targets on port 8000
+
+### 5. **Database**
+
+- **Amazon RDS** PostgreSQL instance:
+  - Engine: PostgreSQL (e.g. version 15.4)
+  - Instance class: `db.t3.micro`
+  - 20 GB gp2 storage
+  - Deployed in private subnets
+  - Only accessible from EC2 instances
+
+### 6. **DNS**
+
+- **Route 53 Hosted Zone**:
+  - Custom domain (e.g. `quizgameruslan.com`)
+  - CNAME record pointing `db.quizgameruslan.com` to RDS endpoint
 
 Ensure sensitive data (like `.pem` keys or credentials) is never committed.
+
+---
+
+## 💰 Estimated Monthly and Annual Costs
+
+| Resource                     | Quantity    | Monthly Estimate | Notes                                                            |
+| ---------------------------- | ----------- | ---------------- | ---------------------------------------------------------------- |
+| EC2 `t3.micro`               | 2 instances | \~\$16.70        | On-demand, 750 hours each (\~\$8.35/month/instance in us-west-2) |
+| Auto Scaling Group           | included    | –                | No extra cost beyond EC2 usage                                   |
+| Application Load Balancer    | 1 ALB       | \~\$18.00        | Includes \~730 hours + minimal data processed                    |
+| RDS PostgreSQL `db.t3.micro` | 1 instance  | \~\$15.00        | 20 GB gp2, no Multi-AZ                                           |
+| 20 GB gp2 for EC2            | 2 volumes   | \~\$2.00         | \~\$0.10/GB                                                      |
+| NAT Gateway                  | 1 gateway   | \~\$32.40        | \$0.045/hour + small data processing                             |
+| Route 53 (hosted zone)       | 1 zone      | \~\$0.50         | \$0.50/month/zone                                                |
+| **Total Monthly**            | –           | **\~\$84.60**    | May vary based on usage and region                               |
+| **Total Annual**             | –           | **\~\$1,015.20** | Excludes data transfer costs                                     |
+
+> 💡 **Note**: This is a simplified estimation based on AWS On-Demand pricing in the `us-west-2` region. Prices may vary based on actual usage, data transfer, and region. Use [AWS Pricing Calculator](https://calculator.aws.amazon.com) for more precise estimates.
 
 ---
 
