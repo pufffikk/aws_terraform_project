@@ -173,7 +173,7 @@ This project provisions the following AWS resources using Terraform:
   - CNAME record pointing `db.quizgameruslan.com` to RDS endpoint
 
 Ensure sensitive data (like `.pem` keys or credentials) is never committed.
-
+![alt text](aws_infrastructure_diagram.png)
 ---
 
 ## 💰 Estimated Monthly and Annual Costs
