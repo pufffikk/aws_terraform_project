@@ -17,7 +17,6 @@ resource "aws_launch_template" "app_lt" {
   user_data = filebase64("${path.module}/scripts/ec2_user_data.sh")
 
   network_interfaces {
-    associate_public_ip_address = true
     security_groups             = [aws_security_group.ec2_sg.id]
   }
 
